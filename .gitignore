@@ -1,0 +1,13 @@
+# Data: keep downloads out of the repo
+data/raw/*
+data/processed/*
+!data/**/.gitkeep
+
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
