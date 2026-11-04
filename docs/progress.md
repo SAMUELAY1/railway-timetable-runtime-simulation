@@ -175,7 +175,26 @@ The API timed out on a full-week, full-day request, so I measured three request 
 - **Impact:** my planned formula (departure from A → arrival at B) fails for these sections.
 - Options for Stage 3: measure **arrival → arrival**, or use departure when present and
   arrival as a fallback.
-- [ ] Check whether daytime trains have the same gap
+- [ ] Check whether daytime trains have the same gap - 
+ [x] Checked daytime trains: the 05:20 stopping train has departures at every middle
+  station, so missing departures are specific to late-night **set-down-only** stops.
+
+**More data findings (20 trains inspected)**
+- **Pick-up-only stops:** the 00:10 to Southampton has *no arrival* at Clapham Junction and
+  Wimbledon (passengers can only board). So a middle stop can have arrival only, departure only, or both.
+- **Recording gaps:** the 05:05 on 8 Oct is missing several actual times (not cancelled,
+  no reason code), so the equipment missed them. These sections must be dropped, not guessed.
+- **Delay building:** 05:20 WAT→WOK on 6 Oct left on time but arrived **9 min late**,
+  losing most time between Surbiton and Woking.
+- **Delay recovering:** 05:18 to Weymouth on 6 Oct left **6 min late** and was **on time
+  by Winchester**, thanks to recovery time in the timetable. So the simulation must allow
+  lateness to *shrink*, not just add up.
+- **Reason codes** (895, 574, 841) appear once a train is late and carry to the end of
+  the journey. To look up in Stage 4.
+
+**Decision for Stage 3: "best available time"**
+- Leaving A = departure (fallback: arrival). Reaching B = arrival (fallback: departure).
+- Same rule for scheduled and actual times; drop sections with missing actual times.
 
 **Bug fixed**
 | Bug | Lesson |
