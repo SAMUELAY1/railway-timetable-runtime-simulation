@@ -43,5 +43,41 @@ def make_session():
     session.headers["Content-Type"] = "application/json"
     return session
 
-s = make_session()
-print("Session ready for:", s.auth[0])
+'''s = make_session()
+print("Session ready for:", s.auth[0])'''
+
+def post(session, endpoint, payload, retries=3):
+    """Send a POST request to HSP and return the JSON reply, retrying if it fails."""
+    url = f"{BASE_URL}/{endpoint}"
+
+    for attempt in range(1, retries + 1):
+        try:
+            response = session.post(url, json=payload, timeout=120)
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as err:
+            if attempt == retries:
+                raise
+            wait = 5 * attempt
+            print(f"  Attempt {attempt} failed ({err}). Retrying in {wait}s...")
+            time.sleep(wait)
+
+def fetch_service_metrics(session, from_date, to_date, from_time="0000", to_time="2359"):
+    """Ask HSP which trains ran on our route between two dates."""
+    payload = {
+        "from_loc": config.FROM_CRS,
+        "to_loc": config.TO_CRS,
+        "from_time": from_time,
+        "to_time": to_time,
+        "from_date": from_date,
+        "to_date": to_date,
+        "days": config.DAYS,
+    }
+    return post(session, "serviceMetrics", payload)
+
+session = make_session()
+result = fetch_service_metrics(session, "2026-10-01", "2026-10-01", "0700", "0900")
+services = result.get("Services", [])
+print("Trains found:", len(services))
+if services:
+    print(services[0])
