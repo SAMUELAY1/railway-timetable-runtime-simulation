@@ -129,6 +129,64 @@ The API timed out on a full-week, full-day request, so I measured three request 
 - [ ] `serviceDetails`: get station-by-station times for each RID
 - [ ] Save every response to disk so downloads can resume
 
+**One-week test of serviceMetrics (5–9 Oct 2026, 2-hour windows)**
+- All 12 windows succeeded → **1,041 train runs** (~208 trains/day through WAT and WOK)
+- Top destinations: Portsmouth Harbour (264), Woking (185), Alton (156), Basingstoke (139)
+- Renamed `sched_dep`/`sched_arr` to `sched_dep_from`/`sched_arr_to`: these are times
+  at *my* two stations, not at the train's origin/destination (a Southampton train's
+  "arrival" was actually its Woking time)
+- **Insight:** run times vary a lot between trains on the same route (00:09 stopping
+  train = 49 min to Woking; 00:10 fast train = 30 min). Mixing them would make an
+  "average journey time" meaningless, so I analyse **each section between stations**,
+  comparing every train against **its own** timetable.
+
+### serviceDetails: station-by-station times ✅
+| Function | What it does |
+|---|---|
+| `fetch_service_details()` | Gets one train's times at every station; **caches** each reply as `details/<RID>.json` |
+| `details_to_rows()` | Flattens one train into one row per station call (`seq` = calling order) |
+| `collect_station_calls()` | Loops over many RIDs, prints progress every 50, saves `station_calls.csv` |
+
+**Decisions and why**
+- **Cache every reply to its own file.** Re-runs skip trains already downloaded, so a
+  stopped download resumes where it left off, and fixing a parsing bug never needs a re-download.
+- **0.5s pause between requests (rate limiting).** Avoids overloading the API.
+- **`or None` for empty times.** HSP sends `""` when a time doesn't exist; `None` becomes
+  proper missing data (`NaN`) in pandas instead of an empty string that breaks maths later.
+- **`dtype=str` when reading CSVs.** Keeps RIDs and times like `"0009"` as text, so pandas
+  doesn't turn them into numbers and drop leading zeros.
+- **Build the DataFrame once, after the loop.** Inside the loop it would rebuild a
+  growing table for every train, which gets slower and slower.
+
+**Test (20 trains)**
+- First run: **12s** (~0.6s per train). Second run: near-instant (served from cache).
+- 20 trains → 360 station calls (~18 stations per train)
+- Estimated full download: ~1.5 hours for 2 months, ~4.5 hours for 6 months
+
+**What the data looks like (00:09 WAT → WOK, 6 Oct)**
+- First station: **no arrival times** (the train starts there). Last station: **no departure times** (it ends there).
+- Times are **whole minutes** only, so precision is about ±1 minute (a limitation to state later).
+- This train arrived at Woking **2 minutes early** (00:56 vs 00:58).
+
+**⚠️ Data quirk found: missing departures at middle stations**
+- Esher → West Byfleet had **arrival times but no departure times**, even though the train kept going.
+- Likely reason: on late-night trains these stops are **"set down only"** (passengers can
+  get off but not on), so the public timetable shows no departure, and HSP only reports public times.
+- **Impact:** my planned formula (departure from A → arrival at B) fails for these sections.
+- Options for Stage 3: measure **arrival → arrival**, or use departure when present and
+  arrival as a fallback.
+- [ ] Check whether daytime trains have the same gap
+
+**Bug fixed**
+| Bug | Lesson |
+|---|---|
+| `IndentationError: unexpected indent` | Lines at the same level need *exactly* the same spaces. Turned on "Render Whitespace" to see spaces and tabs |
+| Docstring placed above `def` | A docstring only counts as the first line *inside* the function |
+
+**Next**
+- [ ] Decide the scope (how many months) and run the full download
+- [ ] Stage 3: calculate planned vs actual run times for each section
+
 ---
 
 ## Interview stories
@@ -138,3 +196,8 @@ The API timed out on a full-week, full-day request, so I measured three request 
    Python's search path, and traced it to macOS hiding the `.pth` file, which Python 3.12 skips."
 3. **Silent indentation bug:** "A loop at the wrong level would have quietly kept only the
    last service, with no error. That taught me to check row counts, not just whether code runs."
+ 4. **Checking the data, not just the code:** "Before calculating run times, I inspected one
+   train station by station and found middle stops with no departure times (set-down-only
+   stops on late trains). My planned formula would have silently failed there, so I
+   designed the calculation to handle it."
+

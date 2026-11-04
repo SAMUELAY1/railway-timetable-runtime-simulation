@@ -15,6 +15,13 @@ DATE_FROM = "2026-05-01"
 DATE_TO = "2026-10-31"
 DAYS = "WEEKDAY"  #HSP
 
+# HSP times out on wide time windows, so we request the day in 2-hour slices
+TIME_WINDOWS = [
+    ("0000", "0159"), ("0200", "0359"), ("0400", "0559"), ("0600", "0759"),
+    ("0800", "0959"), ("1000", "1159"), ("1200", "1359"), ("1400", "1559"),
+    ("1600", "1759"), ("1800", "1959"), ("2000", "2159"), ("2200", "2359"),
+]
+
 # Simulation settings
 PEAK_WINDOWS = [("07:00", "09:59"), ("16:00", "18:59")]
 N_SIMULATIONS = 10_000
