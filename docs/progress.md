@@ -246,6 +246,18 @@ The API timed out on a full-week, full-day request, so I measured three request 
 - Public timetables round short stops to **0 minutes**, so any real stop (~30s) shows as
   at least +1 min dwell delay. True allowances are slightly bigger than the data shows.
 
+**Full run: data quality report (Aug–Oct 2026)**
+| Step | Sections | % |
+|---|---|---|
+| Before cleaning | 168,618 | 100% |
+| Recording gaps (missing actual times) | −6,265 | 3.7% |
+| Impossible negative run times | −2 | 0.001% |
+| Bank holiday (31 Aug) | −2,703 | 1.6% |
+| **Kept** | **159,648** | **94.7%** |
+
+- Peak: 51,825 sections (32%); off-peak: 107,823 (68%). Peak covers 25% of the day
+  but holds 32% of sections because more trains run then. ✅ Sanity check passed.
+- Only 2 negatives: confirms HSP actuals are reliable and the −720 midnight rule was right.
 
 
 ---

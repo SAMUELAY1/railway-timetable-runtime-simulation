@@ -115,3 +115,4 @@ if __name__ == "__main__":
     sections.to_csv(out, index=False)
     print(f"Saved {len(sections):,} sections to {out.name}")
     print(sections["peak"].value_counts())
+
