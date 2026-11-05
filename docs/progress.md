@@ -259,6 +259,14 @@ The API timed out on a full-week, full-day request, so I measured three request 
   but holds 32% of sections because more trains run then. ✅ Sanity check passed.
 - Only 2 negatives: confirms HSP actuals are reliable and the −720 midnight rule was right.
 
+**Outlier found and fixed**
+- `describe()` showed a max actual run time of **1,392 min (23 hours)**: impossible.
+- Cause: times either side of midnight in the *other* direction (leave just after
+  midnight, reach just before) gave a big **positive** difference.
+- Fix: `minutes_between` now also subtracts 1440 when the difference is > 720. The broken
+  row became negative and was removed by the existing cleaning rule (negatives: 2 → 3).
+- Lesson: always check min/max. Impossible values reveal bugs that averages hide.
+
 
 ---
 

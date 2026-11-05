@@ -13,9 +13,11 @@ def to_minutes(hhmm):
 
 
 def minutes_between(start, end):
-    """Minutes from start to end, adding a day when a train crosses midnight."""
+    """Minutes from start to end, correcting for times either side of midnight."""
     diff = end - start
-    return diff.where(diff > -720, diff + 1440)
+    diff = diff.where(diff > -720, diff + 1440)
+    diff = diff.where(diff < 720, diff - 1440)
+    return diff
 
 TIME_COLS = ["sched_arr", "sched_dep", "actual_arr", "actual_dep"]
 

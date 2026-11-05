@@ -28,3 +28,7 @@ TIME_WINDOWS = [
 PEAK_WINDOWS = [("07:00", "09:59"), ("16:00", "18:59")]
 N_SIMULATIONS = 10_000
 ON_TIME_THRESHOLD_MIN = 1
+
+# Stations between Waterloo and Woking, in order along the line
+ROUTE_STATIONS = ["WAT", "VXH", "CLJ", "EAD", "WIM", "SUR",
+                  "ESH", "HER", "WAL", "WYB", "BFN", "WBY", "WOK"]
