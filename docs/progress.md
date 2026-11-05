@@ -267,6 +267,22 @@ The API timed out on a full-week, full-day request, so I measured three request 
   row became negative and was removed by the existing cleaning rule (negatives: 2 → 3).
 - Lesson: always check min/max. Impossible values reveal bugs that averages hide.
 
+## Stage 4: Exploration (`notebooks/01_explore.ipynb`) 🛠️
+
+**Chart 1: average running and dwell delay by section (stopping trains)**
+![Delay by section](../outputs/figures/delay_by_section.png)
+
+- 33,188 station-to-next-station sections (~2,300–4,300 trains per section)
+- **Running:** trains gain time on almost every section (up to −2.1 min HER→WAL);
+  only WAT→VXH loses time (+0.3), the most congested part of the route.
+- **Dwell:** trains stand longer than planned at most stops (up to +2.2 min at Esher);
+  smallest at Clapham Junction (+0.1).
+- **Insight:** running gains and dwell delays mirror each other. Trains run early, arrive
+  early, and **must wait** because passenger trains can't depart before timetabled time.
+  Much "dwell delay" is waiting for the clock, not lost time.
+- **Impact on the model:** the simulation can't simply add running and dwell delays;
+  it needs a "can't depart early" rule (lateness can't go below 0 at departure).
+
 
 ---
 
