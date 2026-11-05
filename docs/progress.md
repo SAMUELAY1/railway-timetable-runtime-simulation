@@ -214,6 +214,38 @@ The API timed out on a full-week, full-day request, so I measured three request 
 - [ ] Decide the scope (how many months) and run the full download
 - [ ] Stage 3: calculate planned vs actual run times for each section
 
+## Stage 3: Data preparation (`prepare.py`) 🛠️ in progress
+
+**Functions built**
+| Function | What it does |
+|---|---|
+| `to_minutes()` | "HHMM" text → minutes since midnight (`"2320"` → 1400); missing stays missing |
+| `minutes_between()` | End − start; adds 1440 only for big negatives (< −720) = midnight crossing |
+| `load_calls()` | Loads station calls and adds a minutes column for every time |
+| `add_best_times()` | Leave = departure (fallback arrival); reach = arrival (fallback departure) |
+| `add_dwell_times()` | Dwell = departure − arrival at the same station (raw times only, no fallback) |
+| `build_sections()` | Pairs each station with the next one on the same train (`groupby("rid").shift(-1)`) |
+| `add_run_times()` | Planned run, actual run, and `run_delay` = actual − planned |
+
+**Decisions and why**
+- **Minutes since midnight:** text times can't be subtracted; numbers can.
+- **Midnight rule uses −720, not < 0:** a big negative = crossed midnight (+1440);
+  a small negative = data error, kept negative so it can be found and removed.
+  Adding 1440 to every negative would create fake 1,438-minute run times.
+- **Dwell uses raw times only:** a fallback would invent dwells that weren't measured.
+
+**🔑 Key finding: reconciling one train by hand**
+- 05:20 WAT → WOK on 6 Oct left 1 min early and arrived **9 min late**.
+- My first model (running time only) said the train **gained 4 minutes**, which was wrong.
+- Reconciling by hand: the delay was in **station dwell times (+14 min)**, which sections excluded.
+  `−1 (departure) − 4 (running) + 14 (dwell) = +9` ✅
+- **Change:** added dwell delays and attached each one to the section arriving at that station.
+- **Lesson:** always reconcile a calculation against a hand-worked example before scaling it up.
+
+**Limitation found**
+- Public timetables round short stops to **0 minutes**, so any real stop (~30s) shows as
+  at least +1 min dwell delay. True allowances are slightly bigger than the data shows.
+
 
 
 ---
@@ -229,4 +261,7 @@ The API timed out on a full-week, full-day request, so I measured three request 
    train station by station and found middle stops with no departure times (set-down-only
    stops on late trains). My planned formula would have silently failed there, so I
    designed the calculation to handle it."
+   5. **Reconciliation:** "My section model said a train gained 4 minutes, but it arrived 9 minutes
+   late. Reconciling by hand showed the delay was in station dwell times, which my sections
+   excluded, so I added dwell delays. The totals then matched exactly."
 

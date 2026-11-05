@@ -14,6 +14,8 @@ TO_CRS = "WOK"   #WOKING
 DATE_FROM = "2026-08-01"   # 3 months: enough runs per service for delay distributions, and stays within one timetable period as they change overtime
 DATE_TO = "2026-10-31"
 DAYS = "WEEKDAY"  #HSP
+# Dates to leave out: bank holiday Monday runs a different timetable
+EXCLUDE_DATES = ["2026-08-31"]
 
 # HSP times out on wide time windows, so we request the day in 2-hour slices
 TIME_WINDOWS = [

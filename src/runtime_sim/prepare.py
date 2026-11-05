@@ -67,12 +67,51 @@ def add_run_times(sections):
     sections["run_delay"] = sections["actual_run"] - sections["planned_run"]
     return sections
 
+def clean_sections(sections):
+    """Remove sections we can't trust, printing how many each rule removes."""
+    print(f"Sections before cleaning: {len(sections):,}")
+
+    before = len(sections)
+    sections = sections.dropna(subset=["planned_run", "actual_run"])
+    print(f"  Removed {before - len(sections):,} with a missing time (recording gaps)")
+
+    before = len(sections)
+    sections = sections[(sections["planned_run"] >= 0) & (sections["actual_run"] >= 0)]
+    print(f"  Removed {before - len(sections):,} with an impossible negative run time")
+
+    before = len(sections)
+    sections = sections[~sections["date"].isin(config.EXCLUDE_DATES)]
+    print(f"  Removed {before - len(sections):,} on excluded dates (bank holiday)")
+
+    print(f"Sections after cleaning: {len(sections):,}")
+    return sections
+
+def is_peak(minutes):
+    """True if a departure time (minutes since midnight) falls in a peak window."""
+    for start, end in config.PEAK_WINDOWS:
+        start_min = to_minutes(start.replace(":", ""))
+        end_min = to_minutes(end.replace(":", ""))
+        if start_min <= minutes <= end_min:
+            return True
+    return False
+
+def add_peak_flag(sections):
+    """Attach each train's departure time from London and whether it's a peak train."""
+    services = pd.read_csv(HSP_DIR / "services.csv", dtype=str)
+    services["dep_min"] = services["sched_dep_from"].map(to_minutes)
+    services["peak"] = services["dep_min"].map(is_peak)
+    return sections.merge(services[["rid", "sched_dep_from", "peak"]], on="rid", how="left")
+
 
 
 if __name__ == "__main__":
     calls = add_dwell_times(add_best_times(load_calls()))
     sections = add_run_times(build_sections(calls))
-    one_train = sections[sections["rid"] == "202610067681365"]
-    print(one_train[["from_loc", "to_loc", "run_delay", "dwell_delay_at_to"]])
-    print("Running delay:", one_train["run_delay"].sum())
-    print("Dwell delay:  ", one_train["dwell_delay_at_to"].sum())
+    sections = clean_sections(sections)
+    sections = add_peak_flag(sections)
+
+    config.PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+    out = config.PROCESSED_DIR / "sections.csv"
+    sections.to_csv(out, index=False)
+    print(f"Saved {len(sections):,} sections to {out.name}")
+    print(sections["peak"].value_counts())
