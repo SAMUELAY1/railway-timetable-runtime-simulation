@@ -147,7 +147,8 @@ def collect_station_calls(session, rids):
     for n, rid in enumerate(rids, start=1):
         details = fetch_service_details(session, rid)
         all_rows.extend(details_to_rows(details))
-        if n % 50 == 0 or n == len(rids):
+        if n % 250 == 0 or n == len(rids):
+            
             print(f"  {n:,}/{len(rids):,} trains done")
 
     calls = pd.DataFrame(all_rows)
@@ -157,12 +158,17 @@ def collect_station_calls(session, rids):
 
 if __name__ == "__main__":
     session = make_session()
-    services = pd.read_csv(HSP_DIR / "services.csv", dtype=str)
-    rids = services["rid"].head(20).tolist()
+    services_file = HSP_DIR / "services.csv"
 
+    if services_file.exists():
+        print("Using saved services.csv (delete it to re-download)")
+        services = pd.read_csv(services_file, dtype=str)
+    else:
+        services = collect_services(session, config.DATE_FROM, config.DATE_TO)
+
+    rids = services["rid"].tolist()
+    print(f"Fetching details for {len(rids):,} trains...")
     start = time.time()
-    calls = collect_station_calls(session, rids)
-    print(f"Took {time.time() - start:.0f}s for {len(rids)} trains")
-    print(calls.head(15))
-
+    collect_station_calls(session, rids)
+    print(f"Finished in {(time.time() - start) / 60:.0f} minutes")
     

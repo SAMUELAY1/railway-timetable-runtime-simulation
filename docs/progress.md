@@ -202,9 +202,19 @@ The API timed out on a full-week, full-day request, so I measured three request 
 | `IndentationError: unexpected indent` | Lines at the same level need *exactly* the same spaces. Turned on "Render Whitespace" to see spaces and tabs |
 | Docstring placed above `def` | A docstring only counts as the first line *inside* the function |
 
+
+**Findings from services.csv (test week)**
+- Trains crossing midnight (e.g. 23:20 → 00:10) → run-time maths must add 24h when arrival < departure
+- Clockface timetable: same services repeat hourly → ~60 runs each over 3 months
+- Fridays can have different IDs, times and destinations → compare each run to its own timetable
+- Missing days (e.g. 16:30 PMH on Fri 9 Oct) → HSP excludes trains with no actual arrival,
+  so cancellations are mostly invisible. Limitation: I measure lateness, not cancellations.
+
 **Next**
 - [ ] Decide the scope (how many months) and run the full download
 - [ ] Stage 3: calculate planned vs actual run times for each section
+
+
 
 ---
 

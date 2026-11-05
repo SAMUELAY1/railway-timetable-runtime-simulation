@@ -11,7 +11,7 @@ FROM_CRS = "WAT" #LONDON WATERLOO
 TO_CRS = "WOK"   #WOKING
 
 # PERIOD OF STUDY
-DATE_FROM = "2026-05-01"
+DATE_FROM = "2026-08-01"   # 3 months: enough runs per service for delay distributions, and stays within one timetable period as they change overtime
 DATE_TO = "2026-10-31"
 DAYS = "WEEKDAY"  #HSP
 
