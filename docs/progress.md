@@ -283,6 +283,60 @@ The API timed out on a full-week, full-day request, so I measured three request 
 - **Impact on the model:** the simulation can't simply add running and dwell delays;
   it needs a "can't depart early" rule (lateness can't go below 0 at departure).
 
+  **Chart 2: average lateness along the route (all trains)**
+![Lateness profile](../outputs/figures/lateness_profile.png)
+- On time at Woking (< 1 min late): **off-peak 40.6%, peak 34.2%**. This is the target the simulation must reproduce.
+- Peak is later than off-peak at every station.
+- The line zigzags, which made me suspicious.
+
+**Investigating the zigzag: composition effect**
+- Each station averaged a *different mix* of trains (CLJ = stopping + semi-fast;
+  EAD = stopping only), so the line wasn't following the same trains.
+- Test: kept only the **2,124 trains calling at all 13 stations**.
+
+**Chart 3: same trains only**
+![Lateness, all-stations trains](../outputs/figures/lateness_profile_stopping.png)
+- **Partly confirmed:** start lateness fell (0.85 → 0.25 off-peak) and the CLJ spike shrank (2.3 → 1.4).
+- **But a zigzag remains, and it's real:** dips come right after the sections with the biggest
+  running gains (WIM, ESH, WAL; see Chart 1). Lateness rises in a **sawtooth**: lost at
+  stations, partly recovered on generous sections, net rising from ~0.25 to ~2.6 min.
+- **Impact on the model:** the simulation must allow lateness to fall as well as rise.
+- **Open question:** peak and off-peak finish almost level at Woking for all-stations trains;
+  the off-peak line jumps on WBY → WOK. Cause not yet known.
+- **Lesson:** a theory can be partly right. Test it, and report what it does and doesn't explain.
+
+## Stage 6: Monte Carlo simulation (`simulate.py`) 🛠️
+
+**v1: independent sampling**
+- Sample start lateness, then for each section: running delay, dwell overrun
+  (from trains that arrived on time or late), and a "can't leave early" rule.
+- Validation (all-stations trains, Woking on-time): **off-peak sim 20.2% vs real 34.9%;
+  peak 31.9% vs 41.6%**. Too pessimistic.
+- Station-by-station: matches at VXH/CLJ, then drifts later at every stop
+  (+0.94 min by Woking), so a small bias is repeated at each station.
+
+**Attempt 1: rounding at departures (didn't work)**
+- 7.8% of real departures are recorded 1 min "early" (rounding); my floor at 0 removed them.
+- Back-of-envelope: 0.08 min × 11 stops ≈ 0.86, matching the 0.89 gap.
+- Fix: sample real departures of early-arriving trains instead of forcing 0.
+- **Result: almost no change (20.2% still).** The estimate matched by coincidence.
+- Lesson: a plausible explanation isn't proof; only testing a change confirms a cause.
+
+**Diagnostic: are delays linked to lateness?**
+| Arrival lateness | −2 | −1 | 0 | 1 | 2 | 3 | 4 | 5+ |
+|---|---|---|---|---|---|---|---|---|
+| Avg dwell overrun | 1.78 | 1.25 | 0.97 | 1.16 | 1.21 | 1.23 | 1.23 | 1.27 |
+
+| Departure lateness | −1 | 0 | 1 | 2 | 3 | 4 | 5+ |
+|---|---|---|---|---|---|---|---|
+| Avg running delay | −0.19 | −0.81 | −1.09 | −1.18 | −1.24 | −1.25 | −0.97 |
+
+- Dwell: late trains do **not** get shorter stops (slightly longer). Not the main cause.
+- **Running: late trains catch up (−1.2), early trains ease off (−0.2).** Independent
+  sampling gives everyone the average, so simulated late trains stay too late. **Main cause.**
+- Next: **conditional sampling**: draw running delays from real trains that left with
+  similar lateness, so the model learns catch-up behaviour from the data.
+
 
 ---
 
