@@ -1,4 +1,4 @@
-"""Stage 3: turn station calls into section run times (planned vs actual)."""
+""" turn station calls into section run times (planned vs actual)."""
 import pandas as pd
 
 from runtime_sim import config
@@ -67,6 +67,8 @@ def add_run_times(sections):
     sections["planned_run"] = minutes_between(sections["sched_leave"], sections["sched_reach"])
     sections["actual_run"] = minutes_between(sections["actual_leave"], sections["actual_reach"])
     sections["run_delay"] = sections["actual_run"] - sections["planned_run"]
+    sections["late_leave"] = minutes_between(sections["sched_leave"], sections["actual_leave"])
+    sections["late_reach"] = minutes_between(sections["sched_reach"], sections["actual_reach"])
     return sections
 
 def clean_sections(sections):
